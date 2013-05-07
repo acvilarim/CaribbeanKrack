@@ -20,16 +20,14 @@ public class Client extends Thread {
 			// objetos que permitem controlar o fluxo de comunica‹o
 			PrintStream saida = new
 					PrintStream(conexao.getOutputStream());
-			// enviar antes de tudo o nome do usu‡rio
 			BufferedReader teclado =
 					new BufferedReader(new InputStreamReader(System.in));
-			System.out.print("Entre com o seu nome: ");
-			String meuNome = teclado.readLine();
-			saida.println(meuNome);
 			// Uma vez que tudo est‡ pronto, antes de iniciar o loop 
 			// principal, executar a thread de recep‹o de mensagens.
-			Thread t = new Client(conexao);
-			t.start();
+			
+			//Thread t = new Client(conexao);
+			//t.start();
+			
 			// loop principal: obtendo uma linha digitada no teclado e
 			// enviando-a para o servidor.
 			String linha;
@@ -38,7 +36,10 @@ public class Client extends Thread {
 				System.out.print("> ");
 				linha = teclado.readLine();
 				// antes de enviar, verifica se a conex‹o n‹o foi fechada
-				if (done) {break;}
+				if (done) {
+					break;
+				}
+				System.out.println("Mensagem: "+linha);
 				// envia para o servidor
 				saida.println(linha);
 			}

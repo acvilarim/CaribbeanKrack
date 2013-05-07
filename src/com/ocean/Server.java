@@ -41,28 +41,37 @@ public class Server extends Thread {
 		}
 
 	}
+	
 	// socket deste cliente
 	private ClientDetails details;
 	// construtor que recebe o socket deste cliente
 	public Server(ClientDetails s) {
 		details = s;
 	}
+	private boolean connected;
+	
 	// execução da thread
 	public void run() {
 		try {
+			System.out.println("\n ENTRANDO NO LOOP DA THREAD");
 			// objetos que permitem controlar fluxo de comunicação
 			BufferedReader entrada = new BufferedReader(new
 					InputStreamReader(details.getConnection().getInputStream()));
 			PrintStream saida = new 
 					PrintStream(details.getConnection().getOutputStream());
+			connected = true;
 			// Loop principal: esperando por alguma string do cliente.
-			// Quando recebe, envia a todos os conectados até que o
-			// cliente envie linha em branco.
-			// Verificar se linha é null (conexão interrompida)
-			// Se não for nula, pode-se compará-la com métodos string
-			String linha = entrada.readLine();
-			while (linha != null && !(linha.trim().equals(""))) {
-				validaEntrada(linha);
+			while(connected) {
+				// Quando recebe, envia a todos os conectados até que o
+				// cliente envie linha em branco.
+				String linha = entrada.readLine();
+				System.out.println("Mensagem: "+linha);
+				if (linha.equals("SAIR")) {
+					connected = false;
+				} else {
+					validaEntrada(linha);
+				}
+				
 			}
 			clientes.remove(details);
 			details.getConnection().close();
@@ -100,7 +109,6 @@ public class Server extends Thread {
 			System.out.println("JOB_RESULT");
 		} else  if (message[COMMAND_CHAR].equals(SEND_JOB)) {
 			System.out.println("SEND_JOB");
-			System.out.println(CRACK.getClass().getDeclaredField(CRACK));
 		}
 		
 	}
