@@ -2,28 +2,33 @@ package com.ships;
 import java.io.*;
 import java.net.*;
 
+import utils.BruteIterator;
+
 public class Client extends Thread {
-	// Flag que indica quando se deve terminar a execução.
+	// Flag que indica quando se deve terminar a execuÔøΩ‚Äπo.
 	private static boolean done = false;
+	private static char[] inputChars = {'a', 'b', 'c'}; 
+	
 	public static void main(String args[]) {
+		String[] teste = generateSequence(0, 2, 3);
 		try {
 			// Para se conectar a algum servidor, basta se criar um
-			// objeto da classe Socket. O primeiro parâmetro é o IP ou
-			// o endereço da máquina a qual se quer conectar e o
-			// segundo parâmetro é a porta da aplicação. Neste caso,
-			// utiliza-se o IP da máquina local (127.0.0.1) e a porta
-			// da aplicação ServidorDeChat. Nada impede a mudança
-			// desses valores, tentando estabelecer uma conexão com
-			// outras portas em outras máquinas.
+			// objeto da classe Socket. O primeiro par‚Ä∞metro ≈Ω o IP ou
+			// o endereÔøΩo da m‚Ä°quina a qual se quer conectar e o
+			// segundo par‚Ä∞metro ≈Ω a porta da aplicaÔøΩ‚Äπo. Neste caso,
+			// utiliza-se o IP da m‚Ä°quina local (127.0.0.1) e a porta
+			// da aplicaÔøΩ‚Äπo ServidorDeChat. Nada impede a mudanÔøΩa
+			// desses valores, tentando estabelecer uma conex‚Äπo com
+			// outras portas em outras m‚Ä°quinas.
 			Socket conexao = new Socket("127.0.0.1", 2222);
-			// uma vez estabelecida a comunicação, deve-se obter os
-			// objetos que permitem controlar o fluxo de comunicação
+			// uma vez estabelecida a comunicaÔøΩ‚Äπo, deve-se obter os
+			// objetos que permitem controlar o fluxo de comunicaÔøΩ‚Äπo
 			PrintStream saida = new
 					PrintStream(conexao.getOutputStream());
 			BufferedReader teclado =
 					new BufferedReader(new InputStreamReader(System.in));
-			// Uma vez que tudo está pronto, antes de iniciar o loop 
-			// principal, executar a thread de recepção de mensagens.
+			// Uma vez que tudo est‚Ä° pronto, antes de iniciar o loop 
+			// principal, executar a thread de recepÔøΩ‚Äπo de mensagens.
 			
 			//Thread t = new Client(conexao);
 			//t.start();
@@ -35,7 +40,7 @@ public class Client extends Thread {
 				// ler a linha digitada no teclado
 				System.out.print("> ");
 				linha = teclado.readLine();
-				// antes de enviar, verifica se a conexão não foi fechada
+				// antes de enviar, verifica se a conex‚Äπo n‚Äπo foi fechada
 				if (done) {
 					break;
 				}
@@ -45,18 +50,18 @@ public class Client extends Thread {
 			}
 		}
 		catch (IOException e) {
-			// Caso ocorra alguma excessão de E/S, mostre qual foi.
+			// Caso ocorra alguma excess‚Äπo de E/S, mostre qual foi.
 			System.out.println("IOException: " + e);
 		}
 	}
-	// parte que controla a recepção de mensagens deste cliente
+	// parte que controla a recepÔøΩ‚Äπo de mensagens deste cliente
 	private Socket conexao;
 	// construtor que recebe o socket deste cliente
 
 	public Client(Socket s) {
 		conexao = s;
 	}
-	// execução da thread
+	// execuÔøΩ‚Äπo da thread
 	public void run() {
 		try {
 			BufferedReader entrada = new BufferedReader
@@ -65,25 +70,43 @@ public class Client extends Thread {
 			while (true) {
 				// pega o que o servidor enviou
 				linha = entrada.readLine();
-				// verifica se é uma linha válida. Pode ser que a conexão
-				// foi interrompida. Neste caso, a linha é null. Se isso
-				// ocorrer, termina-se a execução saindo com break
+				// verifica se ≈Ω uma linha v‚Ä°lida. Pode ser que a conex‚Äπo
+				// foi interrompida. Neste caso, a linha ≈Ω null. Se isso
+				// ocorrer, termina-se a execuÔøΩ‚Äπo saindo com break
 				if (linha == null) {
-					System.out.println("Conexão encerrada!");
+					System.out.println("Conex‚Äπo encerrada!");
 					break;
 					
 				}
-				// caso a linha não seja nula, deve-se imprimi-la
+				// caso a linha n‚Äπo seja nula, deve-se imprimi-la
 				System.out.println();
 				System.out.println(linha);
 				System.out.print("...> ");
 			}
 		}
 		catch (IOException e) {
-			// caso ocorra alguma exceção de E/S, mostre qual foi.
+			// caso ocorra alguma exceÔøΩ‚Äπo de E/S, mostre qual foi.
 			System.out.println("IOException: " + e);
 		}
-		// sinaliza para o main que a conexão encerrou.
+		// sinaliza para o main que a conex‚Äπo encerrou.
 		done = true;
+	}
+	
+	private static String[] generateSequence(int minIndex, int maxIndex, int wordSize){
+		String[] retorno = new String[999999];
+		int index = 0;
+		BruteIterator generator = new BruteIterator(inputChars[minIndex], inputChars[maxIndex], wordSize);
+		while (generator.hasNext())
+		{
+			retorno[index] = generator.next();
+			index++;
+		}	
+		for (int i = 0; i < retorno.length; i++)
+		{
+			if (retorno[i] == null)
+				break;
+			System.out.println(retorno[i]);
+		}
+		return retorno;
 	}
 }
