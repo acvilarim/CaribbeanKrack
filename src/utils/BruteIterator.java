@@ -12,13 +12,15 @@ public class BruteIterator implements Iterator<String> {
 
     private int reachedLast = 0;
 
-    public BruteIterator(char min, char max, int length) {
-        this.min = min;
-        this.max = max;
-        current = new char[length];
+    public BruteIterator(char[] min, char[] max) {
+        this.min = 'a';
+        this.max = 'z';
+        this.current = min;
+        this.last = max;
+        /*current = new char[length];
         Arrays.fill(current, min);
         last = new char[length];
-        Arrays.fill(last, max);
+        Arrays.fill(last, max);*/
     }
 
     @Override
