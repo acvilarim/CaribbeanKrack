@@ -10,7 +10,6 @@ public class Client extends Thread {
 	private static char[] inputChars = {'a', 'b', 'c'}; 
 	
 	public static void main(String args[]) {
-		String[] teste = generateSequence(0, 2, 3);
 		try {
 			// Para se conectar a algum servidor, basta se criar um
 			// objeto da classe Socket. O primeiro par‰metro Ž o IP ou
@@ -30,8 +29,8 @@ public class Client extends Thread {
 			// Uma vez que tudo est‡ pronto, antes de iniciar o loop 
 			// principal, executar a thread de recep�‹o de mensagens.
 			
-			//Thread t = new Client(conexao);
-			//t.start();
+			Thread t = new Client(conexao);
+			t.start();
 			
 			// loop principal: obtendo uma linha digitada no teclado e
 			// enviando-a para o servidor.
@@ -44,7 +43,7 @@ public class Client extends Thread {
 				if (done) {
 					break;
 				}
-				System.out.println("Mensagem: "+linha);
+				System.out.println("Enviando: "+linha);
 				// envia para o servidor
 				saida.println(linha);
 			}
@@ -80,12 +79,12 @@ public class Client extends Thread {
 				}
 				// caso a linha n‹o seja nula, deve-se imprimi-la
 				System.out.println();
-				System.out.println(linha);
+				System.out.println("Recebendo: " +linha);
 				System.out.print("...> ");
 			}
 		}
 		catch (IOException e) {
-			// caso ocorra alguma exce�‹o de E/S, mostre qual foi.
+			// caso ocorra alguma exceções de E/S, mostre qual foi.
 			System.out.println("IOException: " + e);
 		}
 		// sinaliza para o main que a conex‹o encerrou.
