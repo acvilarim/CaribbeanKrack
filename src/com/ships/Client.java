@@ -7,6 +7,7 @@ import java.util.Calendar;
 import java.util.Date;
 
 import utils.BruteIterator;
+import utils.Md5Generator;
 
 public class Client extends Thread {
 	// Flag que indica quando se deve terminar a execuï¿½â€¹o.
@@ -16,7 +17,7 @@ public class Client extends Thread {
 	private static char[] test2 = {'z', 'z','z','z'};
 	
 	public static void main(String args[]) {
-		String[] teste = generateSequence(test1, test2);
+		String[] teste = testCrack(0, 100);
 		try {
 			// Para se conectar a algum servidor, basta se criar um
 			// objeto da classe Socket. O primeiro parâ€°metro Å½ o IP ou
@@ -98,36 +99,33 @@ public class Client extends Thread {
 		done = true;
 	}
 	
-	private static String[] generateSequence(char[] minIndex, char[] maxIndex){
+	private static String[] testCrack(int minIndex, int maxIndex){
 		String[] retorno1 = new String[456976];
 		String[] retorno2 = new String[456976];
-		int index = 0;
-		BruteIterator generator = new BruteIterator(minIndex, maxIndex);
-		BruteIterator generator2 = new BruteIterator(minIndex, maxIndex);
+		BruteIterator generator = new BruteIterator(test1, test2);
 		Date t1 = Calendar.getInstance().getTime();
 		System.out.println(Calendar.getInstance().getTime());
-		String palavra = "";
 		int i = 0;
 		while (generator.hasNext())
 		{
 			retorno1[i] = generator.next();
 			i++;
 		}	
-		int l = 0;
-		while (generator2.hasNext())
-		{
-			retorno2[l] = generator2.next();
-			l++;
-		}
+		retorno2 =retorno1;
+		Md5Generator md = new Md5Generator();
 		
-		for (int j = 2; j > 0; j--)
+		//Percorre x indices do array gerado
+		for (int j = minIndex; j < maxIndex; j++)
 		{
 			for (int k = 0; k < retorno2.length; k++)
 			{
-				System.out.println(retorno1[j]+retorno2[k]);
+				//Gera hash md5 e compara com o recebido pela mensagem (no caso foi criado na web e ta hardcoded)
+				if (md.md5(retorno1[j]+retorno2[k]).equals("987b43eadf127aaeaf04529c46d23754")){
+					System.out.println(retorno1[j]+retorno2[k]);
+					return retorno1;
+				}
 			}
 		}
-		System.out.println(t1);
 		System.out.println(Calendar.getInstance().getTime());
 		return retorno1;
 	}
