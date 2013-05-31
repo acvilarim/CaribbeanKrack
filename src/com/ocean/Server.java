@@ -63,7 +63,7 @@ public class Server extends Thread {
 				// Quando recebe, envia a todos os conectados at� que o
 				// cliente envie linha em branco.
 				String linha = clientConnected.read();
-				System.out.println("Mensagem: "+linha);
+				System.out.println("Mensagem Recebida: "+linha);
 				if (linha.equals("SAIR")) {
 					connected = false;
 				} else {
@@ -101,10 +101,24 @@ public class Server extends Thread {
 			
 			jobs.add(new CrackJob(clientConnected, message[MESSAGE_CHAR]));
 			clientConnected.sendMessage("OnQueue");
-			
 			//- Enviar mensagem de JOB adicionado			
 			//- quais maquinas conectadas (Ja sabemos)s
 			//- distribuir tarefas
+			
+			for (ClientDetails client : clients) {
+				try {
+					PrintStream saida = new
+							PrintStream(client.getConnection().getOutputStream());
+					String msg ="C:"+"0:100:"+message[MESSAGE_CHAR];
+					System.out.println("Mensagem Enviada aos clients: "+msg);
+					saida.println(msg);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}
+			
 			System.out.println("CRACK");
 		} else  if (message[COMMAND_CHAR].equals(QUEUE)) {
 			//pesquisar na lista de jobs a posição do mesmo

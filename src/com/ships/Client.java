@@ -6,6 +6,8 @@ import java.sql.Time;
 import java.util.Calendar;
 import java.util.Date;
 
+import com.bean.CrackJob;
+
 import utils.BruteIterator;
 import utils.Md5Generator;
 
@@ -17,7 +19,7 @@ public class Client extends Thread {
 	private static char[] test2 = {'z', 'z','z','z'};
 	
 	public static void main(String args[]) {
-		String[] teste = testCrack(0, 100);
+		//String[] teste = testCrack(0, 100);
 		try {
 			// Para se conectar a algum servidor, basta se criar um
 			// objeto da classe Socket. O primeiro parâ€°metro Å½ o IP ou
@@ -36,9 +38,8 @@ public class Client extends Thread {
 					new BufferedReader(new InputStreamReader(System.in));
 			// Uma vez que tudo estâ€¡ pronto, antes de iniciar o loop 
 			// principal, executar a thread de recepï¿½â€¹o de mensagens.
-			
-			//Thread t = new Client(conexao);
-			//t.start();
+			Thread t = new Client(conexao);
+			t.start();
 			
 			// loop principal: obtendo uma linha digitada no teclado e
 			// enviando-a para o servidor.
@@ -51,7 +52,7 @@ public class Client extends Thread {
 				if (done) {
 					break;
 				}
-				System.out.println("Mensagem: "+linha);
+				System.out.println("Mensagem Enviada: "+linha);
 				// envia para o servidor
 				saida.println(linha);
 			}
@@ -75,6 +76,7 @@ public class Client extends Thread {
 					(new InputStreamReader(conexao.getInputStream()));
 			String linha;
 			while (true) {
+				System.out.println("TreadConnectada");
 				// pega o que o servidor enviou
 				linha = entrada.readLine();
 				// verifica se Å½ uma linha vâ€¡lida. Pode ser que a conexâ€¹o
@@ -84,6 +86,10 @@ public class Client extends Thread {
 					System.out.println("Conexâ€¹o encerrada!");
 					break;
 					
+				} else {
+					validaEntrada(linha);
+					//String[] teste = testCrack(0, 100);
+
 				}
 				// caso a linha nâ€¹o seja nula, deve-se imprimi-la
 				System.out.println();
@@ -99,7 +105,36 @@ public class Client extends Thread {
 		done = true;
 	}
 	
-	private static String[] testCrack(int minIndex, int maxIndex){
+	private static final String CRACK = "C";
+	private static final String RESPONSE = "R";
+	
+	private static final String SEPARATOR = ":";
+	private static final int COMMAND_CHAR = 0;
+	private static final int START_INDEX = 1;
+	private static final int END_INDEX = 2;
+	private static final int HASH = 3;
+	
+
+	private void validaEntrada(String linha) {
+		
+		String[] message = linha.split(SEPARATOR);
+		System.out.println("Mensagem para crackear: "+linha);
+		if (message[COMMAND_CHAR].equals(CRACK)) {
+			testCrack(message[START_INDEX], message[END_INDEX], message[HASH]);
+			
+			System.out.println("CRACK");
+		} else  if (message[COMMAND_CHAR].equals(RESPONSE)) {
+			
+			System.out.println("SEND_JOB");
+		}
+	}
+	
+	public String[] testCrack(String startIndex, String endIndex, String hash){
+		
+		System.out.println("Iniciando o crack");
+		int minIndex = Integer.parseInt(startIndex);
+		int maxIndex = Integer.parseInt(endIndex);
+		
 		String[] retorno1 = new String[456976];
 		String[] retorno2 = new String[456976];
 		BruteIterator generator = new BruteIterator(test1, test2);
@@ -120,7 +155,8 @@ public class Client extends Thread {
 			for (int k = 0; k < retorno2.length; k++)
 			{
 				//Gera hash md5 e compara com o recebido pela mensagem (no caso foi criado na web e ta hardcoded)
-				if (md.md5(retorno1[j]+retorno2[k]).equals("987b43eadf127aaeaf04529c46d23754")){
+//				if (md.md5(retorno1[j]+retorno2[k]).equals("987b43eadf127aaeaf04529c46d23754")){
+				if (md.md5(retorno1[j]+retorno2[k]).equals(hash)){
 					System.out.println(retorno1[j]+retorno2[k]);
 					return retorno1;
 				}
