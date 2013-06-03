@@ -3,8 +3,11 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import utils.Md5Generator;
+
 import com.bean.ClientDetails;
 import com.bean.CrackJob;
+import com.bean.MessagesConstants;
 
 public class Server extends Thread {
 	
@@ -12,127 +15,123 @@ public class Server extends Thread {
 	// Note que a instancia��o est� no main.
 	private static Vector<ClientDetails> clients;
 	private static Vector<CrackJob> jobs;
+	private static int jobOnProcess;
 	
 	public static void main(String args[]) {
 		// instancia o vetor de clientes conectados
 		clients = new Vector<ClientDetails>();
 		jobs = new Vector<CrackJob>();
+		jobOnProcess = 0;
 		try {
 			// criando um socket que fica escutando a porta 2222.
 			ServerSocket s = new ServerSocket(2222);
 			// Loop principal.
+			System.out.println("SERVER INICIADO em "+s.getInetAddress()+":"+s.getLocalPort());
 			while (true) {
-				// aguarda algum cliente se conectar. A execu��o do
-				// servidor fica bloqueada na chamada do m�todo accept da
-				// classe ServerSocket. Quando algum cliente se conectar
-				// ao servidor, o m�todo desbloqueia e retorna com um
-				// objeto da classe Socket, que � porta da comunica��o.
-				System.out.print("Esperando alguem se conectar...");
 				Socket connection = s.accept();
-				System.out.println(" Conectou!");
+				
 				ClientDetails details = new ClientDetails(connection);
 				clients.add(details);
-				// cria uma nova thread para tratar essa conex�o
+				System.out.println("Novo Client connectado!");
+				
 				Thread t = new Server(details);
 				t.start();
-				// voltando ao loop, esperando mais algu�m se conectar.
 			}
 		}
 		catch (IOException e) {
-			// caso ocorra alguma excess�o de E/S, mostre qual foi.
 			System.out.println("IOException: " + e);
 		}
-
 	}
 	
-	// socket deste cliente
+	/**
+	 * Iniciando threads no servidor
+	 */
+	
 	private ClientDetails clientConnected;
-	// construtor que recebe o socket deste cliente
+	
 	public Server(ClientDetails s) {
 		clientConnected = s;
 	}
+	
 	private boolean connected;
 	
-	// execu��o da thread
 	public void run() {
 		try {
-			System.out.println("\n ENTRANDO NO LOOP DA THREAD");
 			connected = true;
-			// Loop principal: esperando por alguma string do cliente.
 			while(connected) {
-				// Quando recebe, envia a todos os conectados at� que o
-				// cliente envie linha em branco.
 				String linha = clientConnected.read();
-				System.out.println("Mensagem Recebida: "+linha);
 				if (linha.equals("SAIR")) {
 					connected = false;
 				} else {
 					validaEntrada(linha);
 				}
+				jobs.get(jobOnProcess).printStatus(jobOnProcess);
 			}
 			clients.remove(clientConnected);
 			clientConnected.getConnection().close();
 		}
 		catch (IOException e) {
-			// Caso ocorra alguma excess�o de E/S, mostre qual foi.
 			System.out.println("IOException: " + e);
 		}
 
 	}
 	
-	private static final String CRACK = "C";
-	private static final String QUEUE = "Q";
-	private static final String STATS = "S";
-	private static final String JOB_RESULT = "R";
-	private static final String SEND_JOB = "J";
-	
-	//"C:ASHOOAFSOPMknaondaoinoiuN"
-	//"Q:ASHOOAFSOPMknaondaoinoiuN"
-	
-	private static final int COMMAND_CHAR = 0;
-	private static final int MESSAGE_CHAR = 1;
-	private static final String SEPARATOR = ":";
-	
 	private void validaEntrada(String linha) {
 		
-		String[] message = linha.split(SEPARATOR);
-		
-		if (message[COMMAND_CHAR].equals(CRACK)) {
+		String[] message = linha.split(MessagesConstants.SEPARATOR);
+		if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.CRACK)) {
+			CrackJob job = new CrackJob(clientConnected, message[MessagesConstants.MESSAGE_CHAR]);
+			if (jobs.size() == 0) {
+				job.startJob();
+			}
+			jobs.add(job);
+			clientConnected.sendMessage(getJobPosition(job));
 			
-			jobs.add(new CrackJob(clientConnected, message[MESSAGE_CHAR]));
-			clientConnected.sendMessage("OnQueue");
 			//- Enviar mensagem de JOB adicionado			
 			//- quais maquinas conectadas (Ja sabemos)s
 			//- distribuir tarefas
 			
 			for (ClientDetails client : clients) {
-				try {
-					PrintStream saida = new
-							PrintStream(client.getConnection().getOutputStream());
-					String msg ="C:"+"0:100:"+message[MESSAGE_CHAR];
-					System.out.println("Mensagem Enviada aos clients: "+msg);
-					saida.println(msg);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				
+				int[] ids = new int[2];
+				CrackJob jobToCrack = jobs.get(jobOnProcess);
+				ids = jobToCrack.getNextJobs(client);
+				String msg = MessagesConstants.CRACK+
+						MessagesConstants.SEPARATOR+ids[0]+
+						MessagesConstants.SEPARATOR+ids[1]+
+						MessagesConstants.SEPARATOR+jobToCrack.getHash();
+				client.sendMessage(msg);
 			}
 			
 			System.out.println("CRACK");
-		} else  if (message[COMMAND_CHAR].equals(QUEUE)) {
+		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.QUEUE)) {
 			//pesquisar na lista de jobs a posição do mesmo
 			System.out.println("QUEUE");
-		} else  if (message[COMMAND_CHAR].equals(STATS)) {
+		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.STATS)) {
 			//pesquisar na lista de jobs do CrackJob quanto já foi feito e enviar o percentual
 			System.out.println("STATS");
-		} else  if (message[COMMAND_CHAR].equals(JOB_RESULT)) {
-			//setar na lista de jobs do crackjob o resultador daquele job.
-			System.out.println("JOB_RESULT");
-		} else  if (message[COMMAND_CHAR].equals(SEND_JOB)) {
+		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.JOB_RESULT)) {
+			String probablePassword = message[MessagesConstants.MESSAGE_CHAR];
+			if (probablePassword.equals(MessagesConstants.NOT_FOUND)) {
+				jobs.get(jobOnProcess).completeJobsFrom(clientConnected);
+			} else {
+				if (jobs.get(jobOnProcess).tryToEndJob(clientConnected, probablePassword)) {
+					jobOnProcess++;
+				} else {
+					//Enviar novamente a mesma lista de jobs.
+					//jobs.get(jobOnProcess).restartJobs(clientConnected);
+				}
+			}
+			
+		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.SEND_JOB)) {
 			//enviar um job da lista de jobs do crackjob.
 			System.out.println("SEND_JOB");
 		}
+	}
+
+	private String getJobPosition(CrackJob job) {
+		int position = jobs.indexOf(job);
+		int queue = position - jobOnProcess; 
+		return MessagesConstants.QUEUE+MessagesConstants.SEPARATOR+queue;
 	}
 	
 	

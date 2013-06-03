@@ -7,53 +7,35 @@ import java.util.Calendar;
 import java.util.Date;
 
 import com.bean.CrackJob;
+import com.bean.MessagesConstants;
 
 import utils.BruteIterator;
 import utils.Md5Generator;
 
 public class Client extends Thread {
-	// Flag que indica quando se deve terminar a execuï¿½â€¹o.
 	private static boolean done = false;
-	//private static char[] inputChars = {'a', 'b', 'c'}; 
+	
 	private static char[] test1 = {'a', 'a', 'a','a'};
 	private static char[] test2 = {'z', 'z','z','z'};
 	
 	public static void main(String args[]) {
-		//String[] teste = testCrack(0, 100);
 		try {
-			// Para se conectar a algum servidor, basta se criar um
-			// objeto da classe Socket. O primeiro parâ€°metro Å½ o IP ou
-			// o endereï¿½o da mâ€¡quina a qual se quer conectar e o
-			// segundo parâ€°metro Å½ a porta da aplicaï¿½â€¹o. Neste caso,
-			// utiliza-se o IP da mâ€¡quina local (127.0.0.1) e a porta
-			// da aplicaï¿½â€¹o ServidorDeChat. Nada impede a mudanï¿½a
-			// desses valores, tentando estabelecer uma conexâ€¹o com
-			// outras portas em outras mâ€¡quinas.
 			Socket conexao = new Socket("127.0.0.1", 2222);
-			// uma vez estabelecida a comunicaï¿½â€¹o, deve-se obter os
-			// objetos que permitem controlar o fluxo de comunicaï¿½â€¹o
 			PrintStream saida = new
 					PrintStream(conexao.getOutputStream());
 			BufferedReader teclado =
 					new BufferedReader(new InputStreamReader(System.in));
-			// Uma vez que tudo estâ€¡ pronto, antes de iniciar o loop 
-			// principal, executar a thread de recepï¿½â€¹o de mensagens.
 			Thread t = new Client(conexao);
 			t.start();
 			
-			// loop principal: obtendo uma linha digitada no teclado e
-			// enviando-a para o servidor.
 			String linha;
 			while (true) {
-				// ler a linha digitada no teclado
 				System.out.print("> ");
 				linha = teclado.readLine();
-				// antes de enviar, verifica se a conexâ€¹o nâ€¹o foi fechada
 				if (done) {
 					break;
 				}
 				System.out.println("Mensagem Enviada: "+linha);
-				// envia para o servidor
 				saida.println(linha);
 			}
 		}
@@ -76,7 +58,6 @@ public class Client extends Thread {
 					(new InputStreamReader(conexao.getInputStream()));
 			String linha;
 			while (true) {
-				System.out.println("TreadConnectada");
 				// pega o que o servidor enviou
 				linha = entrada.readLine();
 				// verifica se Å½ uma linha vâ€¡lida. Pode ser que a conexâ€¹o
@@ -94,7 +75,7 @@ public class Client extends Thread {
 				// caso a linha nâ€¹o seja nula, deve-se imprimi-la
 				System.out.println();
 				System.out.println(linha);
-				System.out.print("...> ");
+				System.out.print("> ");
 			}
 		}
 		catch (IOException e) {
@@ -105,33 +86,29 @@ public class Client extends Thread {
 		done = true;
 	}
 	
-	private static final String CRACK = "C";
-	private static final String RESPONSE = "R";
-	
-	private static final String SEPARATOR = ":";
-	private static final int COMMAND_CHAR = 0;
-	private static final int START_INDEX = 1;
-	private static final int END_INDEX = 2;
-	private static final int HASH = 3;
-	
-
-	private void validaEntrada(String linha) {
+	private void sendMessageBack(String result) throws IOException {
 		
-		String[] message = linha.split(SEPARATOR);
-		System.out.println("Mensagem para crackear: "+linha);
-		if (message[COMMAND_CHAR].equals(CRACK)) {
-			testCrack(message[START_INDEX], message[END_INDEX], message[HASH]);
-			
-			System.out.println("CRACK");
-		} else  if (message[COMMAND_CHAR].equals(RESPONSE)) {
-			
-			System.out.println("SEND_JOB");
-		}
+		String msg = MessagesConstants.JOB_RESULT+
+				MessagesConstants.SEPARATOR+result;
+		System.out.println("Enviando Retorno - "+msg);
+		PrintStream saida = new PrintStream(conexao.getOutputStream());
+		saida.println(msg);
+		
 	}
 	
-	public String[] testCrack(String startIndex, String endIndex, String hash){
+	private void validaEntrada(String linha) throws IOException{
 		
-		System.out.println("Iniciando o crack");
+		String[] message = linha.split(MessagesConstants.SEPARATOR);
+		if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.CRACK)) {
+			sendMessageBack(testCrack(message[MessagesConstants.START_INDEX], message[MessagesConstants.END_INDEX], message[MessagesConstants.HASH]));
+		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.QUEUE)) {
+			System.out.println("Job na posição "+message[MessagesConstants.MESSAGE_CHAR]+" da fila");
+		} 
+		
+	}
+	
+	public String testCrack(String startIndex, String endIndex, String hash){
+		
 		int minIndex = Integer.parseInt(startIndex);
 		int maxIndex = Integer.parseInt(endIndex);
 		
@@ -139,7 +116,7 @@ public class Client extends Thread {
 		String[] retorno2 = new String[456976];
 		BruteIterator generator = new BruteIterator(test1, test2);
 		Date t1 = Calendar.getInstance().getTime();
-		System.out.println(Calendar.getInstance().getTime());
+		System.out.println("Cracking "+minIndex+" - "+maxIndex+" at "+Calendar.getInstance().getTime());
 		int i = 0;
 		while (generator.hasNext())
 		{
@@ -147,22 +124,20 @@ public class Client extends Thread {
 			i++;
 		}	
 		retorno2 =retorno1;
-		Md5Generator md = new Md5Generator();
 		
 		//Percorre x indices do array gerado
 		for (int j = minIndex; j < maxIndex; j++)
 		{
+			System.out.println("checking "+retorno1[j]+"....");
 			for (int k = 0; k < retorno2.length; k++)
 			{
 				//Gera hash md5 e compara com o recebido pela mensagem (no caso foi criado na web e ta hardcoded)
-//				if (md.md5(retorno1[j]+retorno2[k]).equals("987b43eadf127aaeaf04529c46d23754")){
-				if (md.md5(retorno1[j]+retorno2[k]).equals(hash)){
-					System.out.println(retorno1[j]+retorno2[k]);
-					return retorno1;
+				if (Md5Generator.md5(retorno1[j]+retorno2[k]).equals(hash)){
+					return retorno1[j]+retorno2[k]; 
 				}
 			}
 		}
-		System.out.println(Calendar.getInstance().getTime());
-		return retorno1;
+		System.out.println("END PACKAGE!!!");
+		return MessagesConstants.NOT_FOUND;
 	}
 }
