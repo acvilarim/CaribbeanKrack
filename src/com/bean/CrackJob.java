@@ -1,13 +1,19 @@
 package com.bean;
 
+import java.io.Serializable;
 import java.util.Vector;
 
 import utils.BruteIterator;
 import utils.Md5Generator;
 
-public class CrackJob {
+public class CrackJob implements Serializable{
 	
-	private ClientDetails requestor;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	//private ClientDetails requestor;
 	
 	private String hash;
 	
@@ -100,7 +106,12 @@ public class CrackJob {
 		}
 		
 	}
-	private class Job {
+	private class Job implements Serializable{
+		
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
 		String predicado;
 		ClientDetails cracker;
 		int status;
@@ -119,6 +130,7 @@ public class CrackJob {
 			this.status = DONE;
 		}
 	}
+	
 	public void printStatus(int jobId) {
 		
 		System.out.println("------------------------------");

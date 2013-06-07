@@ -86,6 +86,21 @@ public class Server extends Thread {
 			}
 			jobs.add(job);
 			clientConnected.sendMessage(getJobPosition(job));
+			//TODO: ENVIAR OS JOBS SERIALIZADOS PARA O BACKUP
+			for (int i = 0; i < jobs.size(); i++)
+			{
+				try{
+					FileOutputStream fo = new FileOutputStream("test.ser");
+					ObjectOutputStream oo = new ObjectOutputStream(fo);
+					System.out.println(jobs.get(i));
+					oo.writeObject((CrackJob)jobs.get(i)); // serializo objeto cat
+					oo.close();
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
 			
 			//- Enviar mensagem de JOB adicionado			
 			//- quais maquinas conectadas (Ja sabemos)s
