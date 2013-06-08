@@ -26,12 +26,14 @@ public class CheckingKeepAlive extends Thread {
 	public void run() {
 		while (true) {
 			System.out.println("the walking dead....");
+			Vector<ClientDetails> clientsRemoved = new Vector<ClientDetails>();
 			for (ClientDetails client : clients) {
 				if (client.isDead()) {
 					//nao podemos remover um client enquanto percorremos o array de clients.
-					//clients.remove(client);
+					clientsRemoved.add(client);
 				}
 			}
+			clients.removeAll(clientsRemoved);
 			try {
 				CheckingKeepAlive.sleep(10000);
 			} catch (InterruptedException e) {
