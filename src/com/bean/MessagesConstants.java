@@ -8,6 +8,7 @@ public final class MessagesConstants {
 	public static final String JOB_RESULT = "R";
 	public static final String SEND_JOB = "J";
 	public static final String SAVE_BACKUP_SERVER = "Z";
+	public static final String MIRROR_MAIN_SERVER = "M";
 
 	public static final String NOT_FOUND = "NF";
 	

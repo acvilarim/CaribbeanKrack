@@ -8,6 +8,7 @@ import utils.Md5Generator;
 import com.bean.ClientDetails;
 import com.bean.CrackJob;
 import com.bean.MessagesConstants;
+import com.ships.Client;
 
 public class Server extends Thread {
 	
@@ -18,8 +19,11 @@ public class Server extends Thread {
 	private static Vector<CrackJob> jobs;
 	
 	//PREENCHER O HARDCODE AQUI, PELO AMOR DE JESUS CRISTO! 
-	private static String backupServerAddress = "/127.0.0.1";
+	private static String backupServerAddress = "192.168.1.104";
+	private static String mainServerAddress = "192.168.1.95";
 	private static int jobOnProcess;
+	private static boolean isBackup = false;
+	private static ServerSocket s;
 	
 	public static void main(String args[]) {
 		// instancia o vetor de clientes conectados
@@ -29,7 +33,7 @@ public class Server extends Thread {
 		jobOnProcess = 0;
 		try {
 			// criando um socket que fica escutando a porta 2222.
-			ServerSocket s = new ServerSocket(2222);
+			s = new ServerSocket(2222);
 			// Loop principal.
 			System.out.println("SERVER INICIADO em "+s.getInetAddress()+":"+s.getLocalPort());
 			while (true) {
@@ -38,15 +42,15 @@ public class Server extends Thread {
 				ClientDetails details = new ClientDetails(connection);
 				System.out.println(connection.getInetAddress().toString());
 				System.out.println(backupServerAddress);
-				/*if (connection.getInetAddress().toString().equals(backupServerAddress))
+				if (connection.getInetAddress().toString().equals("/"+backupServerAddress))
 				{
 					backups.add(details);
 					System.out.println("BACKUP SERVER");
 				}
 				else
-				{*/
+				{
 					clients.add(details);
-				//}
+				}
 				System.out.println("Novo Client connectado!");
 				
 				Thread t = new Server(details);
@@ -73,7 +77,15 @@ public class Server extends Thread {
 	public void run() {
 		try {
 			connected = true;
+			ObjectInputStream ois = 
+                    new ObjectInputStream(clientConnected.getConnection().getInputStream());
 			while(connected) {
+				try {
+					jobs = ((Vector<CrackJob>) ois.readObject());
+				} catch (ClassNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				String linha = clientConnected.read();
 				if (linha.equals("SAIR")) {
 					connected = false;
@@ -94,6 +106,7 @@ public class Server extends Thread {
 	private void validaEntrada(String linha) {
 		
 		String[] message = linha.split(MessagesConstants.SEPARATOR);
+		
 		if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.CRACK)) {
 			CrackJob job = new CrackJob(clientConnected, message[MessagesConstants.MESSAGE_CHAR]);
 			if (jobs.size() == 0) {
@@ -101,18 +114,7 @@ public class Server extends Thread {
 			}
 			jobs.add(job);
 			clientConnected.sendMessage(getJobPosition(job));
-			//TODO: ENVIAR OS JOBS SERIALIZADOS PARA O BACKUP
-			try{
-				FileOutputStream fo = new FileOutputStream("test.ser");
-				ObjectOutputStream oo = new ObjectOutputStream(fo);
-				//System.out.println(jobs.get(i));
-				oo.writeObject(jobs); // serializo objeto cat
-				oo.close();
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace();
-			}
+			
 			
 			//- Enviar mensagem de JOB adicionado			
 			//- quais maquinas conectadas (Ja sabemos)s
@@ -154,6 +156,24 @@ public class Server extends Thread {
 			//enviar um job da lista de jobs do crackjob.
 			System.out.println("SEND_JOB");
 		}
+		else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.MIRROR_MAIN_SERVER)) {
+			//TODO:PREENCHER O JOBONPROCESS PARA O BACKUP
+		}
+		
+		try{
+			FileOutputStream fo = new FileOutputStream("test.ser");
+			ObjectOutputStream oo = new ObjectOutputStream(fo);
+			oo.writeObject(jobs); // serializo vector de jobs
+			oo.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		//TODO: ENVIAR OS JOBS SERIALIZADOS PARA O BACKUP
+		//TODO: ENVIAR O JOBONPROCESS PARA O BACKUP
+		//TODO: ENVIAR O ENDEREÇO DO SERVIDOR DE BAKCUP PARA OS CLIENTS
 	}
 
 	private String getJobPosition(CrackJob job) {
