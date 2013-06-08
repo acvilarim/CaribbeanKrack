@@ -2,6 +2,7 @@ package com.bean;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Vector;
 
 import utils.BruteIterator;
@@ -21,6 +22,8 @@ public class CrackJob implements Serializable{
 	public int id;
 	
 	private int status;
+	private Date startAt;
+	private Date endAt;
 	private static final int WAITING = 0;
 	private static final int WORKING = 1;
 	private static final int DONE = 2;
@@ -28,6 +31,7 @@ public class CrackJob implements Serializable{
 	private int lastIndexSent;
 	
 	private Vector<Job> stevie;
+	private Vector<Job> processingJobs;
 	private final int ARGUMENT = 10;
 	
 	private String password;
@@ -56,6 +60,7 @@ public class CrackJob implements Serializable{
 	}
 	
 	public void startJob() {
+		startAt = new Date();
 		status = WORKING;
 		lastIndexSent = 0;
 	}
@@ -97,6 +102,9 @@ public class CrackJob implements Serializable{
 		this.password = password; 
 		//Chamar o brute interetor e criar os jobs;
 		stevie.removeAllElements();
+		endAt = new Date();
+		System.out.println("Senha Encontrada:" + hash +" = "+password);
+		System.out.println("tempo: " + (endAt.getTime() - startAt.getTime()));
 	}
 	
 	public Vector<Job> getJobs() {
@@ -114,7 +122,6 @@ public class CrackJob implements Serializable{
 	public boolean tryToEndJob(ClientDetails client, String password) {
 		if (Md5Generator.md5(password).equals(hash)) {
 			this.setCrackJobDone(password);
-			System.out.println("Senha Encontrada:" + hash +" = "+password);
 			return true;
 		} else {
 			System.out.println("Senha ERRADA!(BUG)");
