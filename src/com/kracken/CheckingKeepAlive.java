@@ -28,7 +28,8 @@ public class CheckingKeepAlive extends Thread {
 			System.out.println("the walking dead....");
 			for (ClientDetails client : clients) {
 				if (client.isDead()) {
-					clients.remove(client);
+					//nao podemos remover um client enquanto percorremos o array de clients.
+					//clients.remove(client);
 				}
 			}
 			try {
