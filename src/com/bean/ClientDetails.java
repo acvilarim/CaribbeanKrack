@@ -19,12 +19,15 @@ public class ClientDetails {
 	private static final int IDLE = 0;
 	private static final int BUSY = 1;
 	
+	public JobIds jobIds;
+	
 	PrintStream output;
 	BufferedReader input;
 	
 	public ClientDetails(Socket s) throws IOException {
 		connection = s;		
 		status = IDLE;
+		jobIds = new JobIds();
 		output = new PrintStream(connection.getOutputStream());
 		input = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 	}
@@ -61,5 +64,10 @@ public class ClientDetails {
 	public void keepAlive() {
 		lastKeepAlive = System.currentTimeMillis();
 		System.out.println(connection.getInetAddress()+" KeepingAlive");
+	}
+
+	public void setJobIds(int id, int[] nextJobs) {
+		jobIds.setJobIds(id, nextJobs[0], nextJobs[1]);
+		
 	}
 }

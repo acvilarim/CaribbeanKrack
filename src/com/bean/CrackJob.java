@@ -2,6 +2,7 @@ package com.bean;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Vector;
 
@@ -28,23 +29,23 @@ public class CrackJob implements Serializable{
 	private static final int WORKING = 1;
 	private static final int DONE = 2;
 	
-	private int lastIndexSent;
+	private int nextIndexToSend;
 	
 	private Vector<Job> stevie;
-	private Vector<Job> processingJobs;
-	private final int ARGUMENT = 10;
+	public Vector<JobIds> deadJobs;
+	private final int ARGUMENT = 9;
 	
 	private String password;
 	
-	private static char[] test1 = {'a', 'a', 'a','a'};
-	private static char[] test2 = {'z', 'z','z','z'};
+	private static char[] test1 = {'a','a','a','a'};
+	private static char[] test2 = {'z','z','z','z'};
 	
 	public CrackJob(ClientDetails requestor, String hash) {
 		this.hash = hash;
 		status = WAITING;
 		//Chamar o brute interetor e criar os jobs;
 		stevie = new Vector<CrackJob.Job>();
-		processingJobs = new Vector<CrackJob.Job>();
+		deadJobs = new Vector<JobIds>();
 		BruteIterator generator = new BruteIterator(test1, test2);
 		while (generator.hasNext())
 		{
@@ -63,30 +64,39 @@ public class CrackJob implements Serializable{
 	public void startJob() {
 		startAt = new Date();
 		status = WORKING;
-		lastIndexSent = 0;
+		nextIndexToSend = 0;
 	}
 
 	
 	public int[] getNextJobs(ClientDetails crackerRequestor) {
+		int[] ids = new int[2];
+		if (deadJobs.size() > 0) {
+			JobIds jb = deadJobs.firstElement();
+			for (int i = jb.startId; i < jb.endId; i++) {
+				stevie.get(i).setRequestor(crackerRequestor);
+			}
+			deadJobs.remove(jb);
+			ids[0] = jb.startId;
+			ids[1] = jb.endId;
+			return ids;
+		}
 		if (status == WORKING) {
-			int[] ids = new int[2];
-			ids[0] = lastIndexSent;
-			if (lastIndexSent+ARGUMENT < stevie.size()) {
+			ids[0] = nextIndexToSend;
+			if (nextIndexToSend+ARGUMENT < stevie.size()) {
 				ids[1] = ids[0]+ARGUMENT;
 			} else {
 				ids[1] = stevie.size();
 			}
-			lastIndexSent = ids[1];
+			nextIndexToSend = ids[1]+1;
 			Vector<Job> nexts  = new Vector<Job>();
-			for (int i = ids[0]; i < ids[1]; i++) {
+			for (int i = ids[0]; i <= ids[1]; i++) {
 				stevie.get(i).setRequestor(crackerRequestor);
 				nexts.add(stevie.get(i));
-				processingJobs.add(stevie.get(i));
 			}
 			return ids;
-		} else {
-			return null;
 		}
+		
+		return null;
 	}
 	
 	public String getHash() {
@@ -148,7 +158,6 @@ public class CrackJob implements Serializable{
 		
 		public void setJobDone() {
 			this.status = DONE;
-			processingJobs.remove(this);
 		}
 	}
 	

@@ -151,7 +151,7 @@ public class Client extends Thread {
 		
 		//Percorre x indices do array gerado
 		System.out.println("Quebrando...");
-		for (int j = minIndex; j < maxIndex; j++)
+		for (int j = minIndex; j <= maxIndex; j++)
 		{
 			//System.out.println("checking "+retorno1[j]+"....");
 			for (int k = 0; k < retorno2.length; k++)

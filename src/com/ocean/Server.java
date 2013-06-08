@@ -13,7 +13,7 @@ public class Server extends Thread {
 	// Parte que controla as conex�es por meio de threads.
 	// Note que a instancia��o est� no main.
 	public static Vector<ClientDetails> clients;
-	private static Vector<CrackJob> jobs;
+	public static Vector<CrackJob> jobs;
 	private static int jobOnProcess;
 	private static CheckingKeepAlive kaChecker;
 	
@@ -55,6 +55,7 @@ public class Server extends Thread {
 	
 	public Server(ClientDetails s) {
 		clientConnected = s;
+		kaChecker.setServer(this);
 	}
 	
 	private boolean connected;
@@ -151,13 +152,12 @@ public class Server extends Thread {
 					jobs.get(jobOnProcess).startJob();
 				}
 				if (jobs.get(jobOnProcess).isProcessing()) { 
-					int[] ids = new int[2];
 					CrackJob jobToCrack = jobs.get(jobOnProcess);
-					ids = jobToCrack.getNextJobs(clientConnected);
+					clientConnected.setJobIds(jobToCrack.id, jobToCrack.getNextJobs(clientConnected));
 					String msg = MessagesConstants.CRACK+
-							MessagesConstants.SEPARATOR+ids[0]+
+							MessagesConstants.SEPARATOR+clientConnected.jobIds.startId+
 							MessagesConstants.SEPARATOR+jobToCrack.id+
-							MessagesConstants.SEPARATOR+ids[1]+
+							MessagesConstants.SEPARATOR+clientConnected.jobIds.endId+
 							MessagesConstants.SEPARATOR+jobToCrack.getHash();
 					clientConnected.sendMessage(msg);
 				}
