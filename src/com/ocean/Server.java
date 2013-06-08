@@ -14,12 +14,17 @@ public class Server extends Thread {
 	// Parte que controla as conex�es por meio de threads.
 	// Note que a instancia��o est� no main.
 	private static Vector<ClientDetails> clients;
+	private static Vector<ClientDetails> backups;
 	private static Vector<CrackJob> jobs;
+	
+	//PREENCHER O HARDCODE AQUI, PELO AMOR DE JESUS CRISTO! 
+	private static String backupServerAddress = "/127.0.0.1";
 	private static int jobOnProcess;
 	
 	public static void main(String args[]) {
 		// instancia o vetor de clientes conectados
 		clients = new Vector<ClientDetails>();
+		backups = new Vector<ClientDetails>();
 		jobs = new Vector<CrackJob>();
 		jobOnProcess = 0;
 		try {
@@ -31,7 +36,17 @@ public class Server extends Thread {
 				Socket connection = s.accept();
 				
 				ClientDetails details = new ClientDetails(connection);
-				clients.add(details);
+				System.out.println(connection.getInetAddress().toString());
+				System.out.println(backupServerAddress);
+				/*if (connection.getInetAddress().toString().equals(backupServerAddress))
+				{
+					backups.add(details);
+					System.out.println("BACKUP SERVER");
+				}
+				else
+				{*/
+					clients.add(details);
+				//}
 				System.out.println("Novo Client connectado!");
 				
 				Thread t = new Server(details);
@@ -87,19 +102,16 @@ public class Server extends Thread {
 			jobs.add(job);
 			clientConnected.sendMessage(getJobPosition(job));
 			//TODO: ENVIAR OS JOBS SERIALIZADOS PARA O BACKUP
-			for (int i = 0; i < jobs.size(); i++)
+			try{
+				FileOutputStream fo = new FileOutputStream("test.ser");
+				ObjectOutputStream oo = new ObjectOutputStream(fo);
+				//System.out.println(jobs.get(i));
+				oo.writeObject(jobs); // serializo objeto cat
+				oo.close();
+			}
+			catch(Exception e)
 			{
-				try{
-					FileOutputStream fo = new FileOutputStream("test.ser");
-					ObjectOutputStream oo = new ObjectOutputStream(fo);
-					System.out.println(jobs.get(i));
-					oo.writeObject((CrackJob)jobs.get(i)); // serializo objeto cat
-					oo.close();
-				}
-				catch(Exception e)
-				{
-					e.printStackTrace();
-				}
+				e.printStackTrace();
 			}
 			
 			//- Enviar mensagem de JOB adicionado			
@@ -115,6 +127,7 @@ public class Server extends Thread {
 						MessagesConstants.SEPARATOR+ids[1]+
 						MessagesConstants.SEPARATOR+jobToCrack.getHash();
 				client.sendMessage(msg);
+				//TODO: ENVIAR ENDEREÇO DO SERVIDOR BACKUP PROS CLIENTS
 			}
 			
 			System.out.println("CRACK");
