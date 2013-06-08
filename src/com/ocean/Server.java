@@ -3,19 +3,19 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import utils.Md5Generator;
-
 import com.bean.ClientDetails;
 import com.bean.CrackJob;
 import com.bean.MessagesConstants;
+import com.kracken.CheckingKeepAlive;
 
 public class Server extends Thread {
 	
 	// Parte que controla as conex�es por meio de threads.
 	// Note que a instancia��o est� no main.
-	private static Vector<ClientDetails> clients;
+	public static Vector<ClientDetails> clients;
 	private static Vector<CrackJob> jobs;
 	private static int jobOnProcess;
+	private static CheckingKeepAlive kaChecker;
 	
 	public static void main(String args[]) {
 		
@@ -26,6 +26,8 @@ public class Server extends Thread {
 		try {
 			// criando um socket que fica escutando a porta 2222.
 			ServerSocket s = new ServerSocket(2222);
+			kaChecker = new CheckingKeepAlive();
+			kaChecker.start();
 			// Loop principal.
 			System.out.println("SERVER INICIADO em "+s.getInetAddress()+":"+s.getLocalPort());
 			while (true) {
@@ -33,7 +35,8 @@ public class Server extends Thread {
 				
 				ClientDetails details = new ClientDetails(connection);
 				clients.add(details);
-				System.out.println("Novo Client connectado!");
+				kaChecker.setClients(clients);
+				System.out.println(details.getConnection().getInetAddress()+" Connectado");
 				
 				Thread t = new Server(details);
 				t.start();
@@ -113,6 +116,8 @@ public class Server extends Thread {
 				client.sendMessage(getJobPosition(job));
 			}
 			
+		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.KEEP_ALIVE)) {
+			clientConnected.keepAlive();
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.QUEUE)) {
 			//pesquisar na lista de jobs a posição do mesmo
 			System.out.println("QUEUE");

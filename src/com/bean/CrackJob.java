@@ -44,6 +44,7 @@ public class CrackJob implements Serializable{
 		status = WAITING;
 		//Chamar o brute interetor e criar os jobs;
 		stevie = new Vector<CrackJob.Job>();
+		processingJobs = new Vector<CrackJob.Job>();
 		BruteIterator generator = new BruteIterator(test1, test2);
 		while (generator.hasNext())
 		{
@@ -69,23 +70,18 @@ public class CrackJob implements Serializable{
 	public int[] getNextJobs(ClientDetails crackerRequestor) {
 		if (status == WORKING) {
 			int[] ids = new int[2];
+			ids[0] = lastIndexSent;
 			if (lastIndexSent+ARGUMENT < stevie.size()) {
-				Vector<Job> nexts  = new Vector<Job>();
-				for (int i = lastIndexSent; i < lastIndexSent+ARGUMENT; i++) {
-					stevie.get(i).setRequestor(crackerRequestor);
-					nexts.add(stevie.get(i));
-				}
-				ids[0] = lastIndexSent;
 				ids[1] = ids[0]+ARGUMENT;
-				lastIndexSent += ARGUMENT;
 			} else {
-				Vector<Job> nexts  = new Vector<Job>();
-				for (int i = lastIndexSent; i < stevie.size(); i++) {
-					stevie.get(i).setRequestor(crackerRequestor);
-					nexts.add(stevie.get(i));
-				}
-				ids[0] = lastIndexSent+1;
 				ids[1] = stevie.size();
+			}
+			lastIndexSent = ids[1];
+			Vector<Job> nexts  = new Vector<Job>();
+			for (int i = ids[0]; i < ids[1]; i++) {
+				stevie.get(i).setRequestor(crackerRequestor);
+				nexts.add(stevie.get(i));
+				processingJobs.add(stevie.get(i));
 			}
 			return ids;
 		} else {
@@ -152,6 +148,7 @@ public class CrackJob implements Serializable{
 		
 		public void setJobDone() {
 			this.status = DONE;
+			processingJobs.remove(this);
 		}
 	}
 	

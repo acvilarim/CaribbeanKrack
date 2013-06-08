@@ -8,6 +8,7 @@ import java.util.Date;
 
 import com.bean.ClientDetails;
 import com.bean.MessagesConstants;
+import com.kracken.KeepAlive;
 
 import utils.BruteIterator;
 import utils.Md5Generator;
@@ -18,6 +19,7 @@ public class Client extends Thread {
 	private static char[] test1 = {'a', 'a', 'a','a'};
 	private static char[] test2 = {'z', 'z','z','z'};
 	private static Thread process;
+	private static KeepAlive ka;
 	
 	public static void main(String args[]) {
 		try {
@@ -28,6 +30,8 @@ public class Client extends Thread {
 					new BufferedReader(new InputStreamReader(System.in));
 			process = new Client(conexao);
 			process.start();
+			ka = new KeepAlive(conexao);
+			ka.start();
 			
 			String linha;
 			while (true) {
