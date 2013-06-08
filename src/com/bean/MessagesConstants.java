@@ -12,9 +12,12 @@ public final class MessagesConstants {
 	
 	public static final int COMMAND_CHAR = 0;
 	public static final int MESSAGE_CHAR = 1;
+	public static final int JOB_ID = 2;
+	
 	public static final int START_INDEX = 1;
-	public static final int END_INDEX = 2;
-	public static final int HASH = 3;
+	public static final int END_INDEX = 3;
+	public static final int HASH = 4;
+	
 	public static final String SEPARATOR = ":";
 
 }

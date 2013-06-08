@@ -18,6 +18,7 @@ public class Server extends Thread {
 	private static int jobOnProcess;
 	
 	public static void main(String args[]) {
+		
 		// instancia o vetor de clientes conectados
 		clients = new Vector<ClientDetails>();
 		jobs = new Vector<CrackJob>();
@@ -60,12 +61,15 @@ public class Server extends Thread {
 			connected = true;
 			while(connected) {
 				String linha = clientConnected.read();
+				//if (linha==null)
 				if (linha.equals("SAIR")) {
 					connected = false;
 				} else {
 					validaEntrada(linha);
+					if (jobs.size() > jobOnProcess) {
+						//jobs.get(jobOnProcess).printStatus(jobOnProcess);
+					}
 				}
-				jobs.get(jobOnProcess).printStatus(jobOnProcess);
 			}
 			clients.remove(clientConnected);
 			clientConnected.getConnection().close();
@@ -79,45 +83,36 @@ public class Server extends Thread {
 	private void validaEntrada(String linha) {
 		
 		String[] message = linha.split(MessagesConstants.SEPARATOR);
+
+		System.out.println("recebendo: "+linha);
 		if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.CRACK)) {
+			System.out.println("CRACK");
 			CrackJob job = new CrackJob(clientConnected, message[MessagesConstants.MESSAGE_CHAR]);
-			if (jobs.size() == 0) {
-				job.startJob();
-			}
 			jobs.add(job);
-			clientConnected.sendMessage(getJobPosition(job));
+			job.setId(jobs.indexOf(job,jobOnProcess));
 			//TODO: ENVIAR OS JOBS SERIALIZADOS PARA O BACKUP
-			for (int i = 0; i < jobs.size(); i++)
-			{
-				try{
-					FileOutputStream fo = new FileOutputStream("test.ser");
-					ObjectOutputStream oo = new ObjectOutputStream(fo);
-					System.out.println(jobs.get(i));
-					oo.writeObject((CrackJob)jobs.get(i)); // serializo objeto cat
-					oo.close();
-				}
-				catch(Exception e)
-				{
-					e.printStackTrace();
-				}
-			}
+//			for (int i = 0; i < jobs.size(); i++)
+//			{
+//				try{
+//					FileOutputStream fo = new FileOutputStream("test.ser");
+//					ObjectOutputStream oo = new ObjectOutputStream(fo);
+//					System.out.println(jobs.get(i));
+//					oo.writeObject((CrackJob)jobs.get(i)); // serializo objeto cat
+//					oo.close();
+//				}
+//				catch(Exception e)
+//				{
+//					e.printStackTrace();
+//				}
+//			}
 			
 			//- Enviar mensagem de JOB adicionado			
 			//- quais maquinas conectadas (Ja sabemos)s
-			//- distribuir tarefas
 			
 			for (ClientDetails client : clients) {
-				int[] ids = new int[2];
-				CrackJob jobToCrack = jobs.get(jobOnProcess);
-				ids = jobToCrack.getNextJobs(client);
-				String msg = MessagesConstants.CRACK+
-						MessagesConstants.SEPARATOR+ids[0]+
-						MessagesConstants.SEPARATOR+ids[1]+
-						MessagesConstants.SEPARATOR+jobToCrack.getHash();
-				client.sendMessage(msg);
+				client.sendMessage(getJobPosition(job));
 			}
 			
-			System.out.println("CRACK");
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.QUEUE)) {
 			//pesquisar na lista de jobs a posição do mesmo
 			System.out.println("QUEUE");
@@ -126,11 +121,17 @@ public class Server extends Thread {
 			System.out.println("STATS");
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.JOB_RESULT)) {
 			String probablePassword = message[MessagesConstants.MESSAGE_CHAR];
+			int jobId = Integer.parseInt(message[MessagesConstants.JOB_ID]);
 			if (probablePassword.equals(MessagesConstants.NOT_FOUND)) {
-				jobs.get(jobOnProcess).completeJobsFrom(clientConnected);
+				System.out.println("JOB_RESULT:NOT_FOUND");
+				jobs.get(jobId).completeJobsFrom(clientConnected);
 			} else {
-				if (jobs.get(jobOnProcess).tryToEndJob(clientConnected, probablePassword)) {
+				System.out.println("JOB_RESULT:FOUND");
+				if (jobs.get(jobId).tryToEndJob(clientConnected, probablePassword)) {
 					jobOnProcess++;
+					if (jobs.size() > jobOnProcess) {
+						jobs.get(jobOnProcess).startJob();
+					}
 				} else {
 					//Enviar novamente a mesma lista de jobs.
 					//jobs.get(jobOnProcess).restartJobs(clientConnected);
@@ -140,6 +141,22 @@ public class Server extends Thread {
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.SEND_JOB)) {
 			//enviar um job da lista de jobs do crackjob.
 			System.out.println("SEND_JOB");
+			if (jobs.size() > jobOnProcess) {
+				if (jobs.get(jobOnProcess).isWaiting()) {
+					jobs.get(jobOnProcess).startJob();
+				}
+				if (jobs.get(jobOnProcess).isProcessing()) { 
+					int[] ids = new int[2];
+					CrackJob jobToCrack = jobs.get(jobOnProcess);
+					ids = jobToCrack.getNextJobs(clientConnected);
+					String msg = MessagesConstants.CRACK+
+							MessagesConstants.SEPARATOR+ids[0]+
+							MessagesConstants.SEPARATOR+jobToCrack.id+
+							MessagesConstants.SEPARATOR+ids[1]+
+							MessagesConstants.SEPARATOR+jobToCrack.getHash();
+					clientConnected.sendMessage(msg);
+				}
+			}
 		}
 	}
 

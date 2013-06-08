@@ -6,6 +6,7 @@ import java.sql.Time;
 import java.util.Calendar;
 import java.util.Date;
 
+import com.bean.ClientDetails;
 import com.bean.MessagesConstants;
 
 import utils.BruteIterator;
@@ -16,6 +17,7 @@ public class Client extends Thread {
 	
 	private static char[] test1 = {'a', 'a', 'a','a'};
 	private static char[] test2 = {'z', 'z','z','z'};
+	private static Thread process;
 	
 	public static void main(String args[]) {
 		try {
@@ -24,8 +26,8 @@ public class Client extends Thread {
 					PrintStream(conexao.getOutputStream());
 			BufferedReader teclado =
 					new BufferedReader(new InputStreamReader(System.in));
-			Thread t = new Client(conexao);
-			t.start();
+			process = new Client(conexao);
+			process.start();
 			
 			String linha;
 			while (true) {
@@ -50,15 +52,21 @@ public class Client extends Thread {
 	public Client(Socket s) {
 		conexao = s;
 	}
+	
+	boolean cracking = false;
+	
 	// execuï¿½â€¹o da thread
 	public void run() {
 		try {
 			BufferedReader entrada = new BufferedReader
 					(new InputStreamReader(conexao.getInputStream()));
 			String linha;
+			//Send job
+			sendMeAJob();
 			while (true) {
 				// pega o que o servidor enviou
 				linha = entrada.readLine();
+				System.out.println(linha);
 				// verifica se Å½ uma linha vâ€¡lida. Pode ser que a conexâ€¹o
 				// foi interrompida. Neste caso, a linha Å½ null. Se isso
 				// ocorrer, termina-se a execuï¿½â€¹o saindo com break
@@ -73,7 +81,6 @@ public class Client extends Thread {
 				}
 				// caso a linha nâ€¹o seja nula, deve-se imprimi-la
 				System.out.println();
-				System.out.println(linha);
 				System.out.print("> ");
 			}
 		}
@@ -85,24 +92,38 @@ public class Client extends Thread {
 		done = true;
 	}
 	
-	private void sendMessageBack(String result) throws IOException {
-		
-		String msg = MessagesConstants.JOB_RESULT+
-				MessagesConstants.SEPARATOR+result;
-		System.out.println("Enviando Retorno - "+msg);
-		PrintStream saida = new PrintStream(conexao.getOutputStream());
-		saida.println(msg);
-		
+	private void sendMeAJob() throws IOException {
+		if (!cracking) {
+			PrintStream saida = new
+					PrintStream(conexao.getOutputStream());
+			saida.println(MessagesConstants.SEND_JOB+MessagesConstants.SEPARATOR);
+		}
 	}
-	
+
 	private void validaEntrada(String linha) throws IOException{
 		
 		String[] message = linha.split(MessagesConstants.SEPARATOR);
 		if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.CRACK)) {
-			sendMessageBack(testCrack(message[MessagesConstants.START_INDEX], message[MessagesConstants.END_INDEX], message[MessagesConstants.HASH]));
+			sendMessageBack(message[MessagesConstants.JOB_ID],
+					testCrack(message[MessagesConstants.START_INDEX], 
+							  message[MessagesConstants.END_INDEX], 
+							  message[MessagesConstants.HASH]));
+			sendMeAJob();
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.QUEUE)) {
 			System.out.println("Job na posição "+message[MessagesConstants.MESSAGE_CHAR]+" da fila");
+			sendMeAJob();
 		} 
+		
+	}
+	
+	private void sendMessageBack(String id, String result) throws IOException {
+		
+		String msg = MessagesConstants.JOB_RESULT+
+				MessagesConstants.SEPARATOR+result+
+				MessagesConstants.SEPARATOR+id;
+		System.out.println("Enviando Retorno - "+msg);
+		PrintStream saida = new PrintStream(conexao.getOutputStream());
+		saida.println(msg);
 		
 	}
 	
@@ -125,9 +146,10 @@ public class Client extends Thread {
 		retorno2 =retorno1;
 		
 		//Percorre x indices do array gerado
+		System.out.println("Quebrando...");
 		for (int j = minIndex; j < maxIndex; j++)
 		{
-			System.out.println("checking "+retorno1[j]+"....");
+			//System.out.println("checking "+retorno1[j]+"....");
 			for (int k = 0; k < retorno2.length; k++)
 			{
 				//Gera hash md5 e compara com o recebido pela mensagem (no caso foi criado na web e ta hardcoded)

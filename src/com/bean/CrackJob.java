@@ -1,5 +1,6 @@
 package com.bean;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Vector;
 
@@ -17,15 +18,17 @@ public class CrackJob implements Serializable{
 	
 	private String hash;
 	
+	public int id;
+	
 	private int status;
 	private static final int WAITING = 0;
 	private static final int WORKING = 1;
 	private static final int DONE = 2;
 	
-	private int lastIndexSend;
+	private int lastIndexSent;
 	
 	private Vector<Job> stevie;
-	private final int ARGUMENT = 100;
+	private final int ARGUMENT = 10;
 	
 	private String password;
 	
@@ -34,8 +37,9 @@ public class CrackJob implements Serializable{
 	
 	public CrackJob(ClientDetails requestor, String hash) {
 		this.hash = hash;
-		stevie = new Vector<CrackJob.Job>();
+		status = WAITING;
 		//Chamar o brute interetor e criar os jobs;
+		stevie = new Vector<CrackJob.Job>();
 		BruteIterator generator = new BruteIterator(test1, test2);
 		while (generator.hasNext())
 		{
@@ -43,31 +47,39 @@ public class CrackJob implements Serializable{
 		}	
 	}
 	
+	public void setId(int id) {
+		if (id == -1) {
+			System.out.println("ERRO AO ADICIONAR CRACK JOB");
+		} else {
+			this.id = id;
+		}
+	}
+	
 	public void startJob() {
 		status = WORKING;
-		lastIndexSend = 0;
+		lastIndexSent = 0;
 	}
 
 	
 	public int[] getNextJobs(ClientDetails crackerRequestor) {
 		if (status == WORKING) {
 			int[] ids = new int[2];
-			if (lastIndexSend+1+ARGUMENT < stevie.size()) {
+			if (lastIndexSent+ARGUMENT < stevie.size()) {
 				Vector<Job> nexts  = new Vector<Job>();
-				for (int i = lastIndexSend; i < lastIndexSend+ARGUMENT; i++) {
+				for (int i = lastIndexSent; i < lastIndexSent+ARGUMENT; i++) {
 					stevie.get(i).setRequestor(crackerRequestor);
 					nexts.add(stevie.get(i));
 				}
-				ids[0] = lastIndexSend+1;
+				ids[0] = lastIndexSent;
 				ids[1] = ids[0]+ARGUMENT;
-				lastIndexSend += ARGUMENT;
+				lastIndexSent += ARGUMENT;
 			} else {
 				Vector<Job> nexts  = new Vector<Job>();
-				for (int i = lastIndexSend; i < stevie.size(); i++) {
+				for (int i = lastIndexSent; i < stevie.size(); i++) {
 					stevie.get(i).setRequestor(crackerRequestor);
 					nexts.add(stevie.get(i));
 				}
-				ids[0] = lastIndexSend+1;
+				ids[0] = lastIndexSent+1;
 				ids[1] = stevie.size();
 			}
 			return ids;
@@ -83,6 +95,8 @@ public class CrackJob implements Serializable{
 	public void setCrackJobDone(String password) {
 		this.status = DONE;
 		this.password = password; 
+		//Chamar o brute interetor e criar os jobs;
+		stevie.removeAllElements();
 	}
 	
 	public Vector<Job> getJobs() {
@@ -98,14 +112,17 @@ public class CrackJob implements Serializable{
 	}
 	
 	public boolean tryToEndJob(ClientDetails client, String password) {
-		if (Md5Generator.md5(password) == hash) {
+		if (Md5Generator.md5(password).equals(hash)) {
 			this.setCrackJobDone(password);
+			System.out.println("Senha Encontrada:" + hash +" = "+password);
 			return true;
 		} else {
+			System.out.println("Senha ERRADA!(BUG)");
 			return false;
 		}
 		
 	}
+	
 	private class Job implements Serializable{
 		
 		/**
@@ -156,6 +173,14 @@ public class CrackJob implements Serializable{
 			break;
 		}
 		System.out.println("------------------------------");
+	}
+
+	public boolean isProcessing() {
+		return status == WORKING;
+	}
+
+	public boolean isWaiting() {
+		return status == WAITING;
 	}
 
 }
