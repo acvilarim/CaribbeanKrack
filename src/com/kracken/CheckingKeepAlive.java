@@ -27,7 +27,7 @@ public class CheckingKeepAlive extends Thread {
 	@Override
 	public void run() {
 		while (true) {
-			System.out.println("the walking dead....");
+//			System.out.println("the walking dead....");
 			Vector<ClientDetails> clientsRemoved = new Vector<ClientDetails>();
 			for (ClientDetails client : s.clients) {
 				if (client.isDead()) {

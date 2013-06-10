@@ -63,7 +63,7 @@ public class ClientDetails {
 	
 	public void keepAlive() {
 		lastKeepAlive = System.currentTimeMillis();
-		System.out.println(connection.getInetAddress()+" KeepingAlive");
+//		System.out.println(connection.getInetAddress()+" KeepingAlive");
 	}
 
 	public void setJobIds(int id, int[] nextJobs) {

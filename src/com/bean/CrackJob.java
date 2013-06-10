@@ -31,7 +31,7 @@ public class CrackJob implements Serializable{
 	
 	private int nextIndexToSend;
 	
-	private Vector<Job> stevie;
+	public Vector<Job> stevie;
 	public Vector<JobIds> deadJobs;
 	private final int ARGUMENT = 9;
 	
@@ -110,7 +110,8 @@ public class CrackJob implements Serializable{
 		stevie.removeAllElements();
 		endAt = new Date();
 		System.out.println("Senha Encontrada:" + hash +" = "+password);
-		System.out.println("tempo: " + (endAt.getTime() - startAt.getTime()));
+		long milis = endAt.getTime() - startAt.getTime();
+		System.out.println("Tempo para quebra: "+(milis/1000)+" Segundos");
 	}
 	
 	public Vector<Job> getJobs() {
@@ -136,13 +137,13 @@ public class CrackJob implements Serializable{
 		
 	}
 	
-	private class Job implements Serializable{
+	public class Job implements Serializable{
 		
 		/**
 		 * 
 		 */
 		private static final long serialVersionUID = 1L;
-		String predicado;
+		public String predicado;
 		ClientDetails cracker;
 		int status;
 		

@@ -36,14 +36,15 @@ public class Server extends Thread {
 				ClientDetails details = new ClientDetails(connection);
 				clients.add(details);
 				kaChecker.setClients(clients);
-				System.out.println(details.getConnection().getInetAddress()+" Connectado");
+				System.out.println("Connectado: "+details.getConnection().getInetAddress());
 				
 				Thread t = new Server(details);
 				t.start();
 			}
 		}
 		catch (IOException e) {
-			System.out.println("IOException: " + e);
+			System.out.println("Server closed! " + e);
+//			System.out.println("IOException: " + e);
 		}
 	}
 	
@@ -79,7 +80,7 @@ public class Server extends Thread {
 			clientConnected.getConnection().close();
 		}
 		catch (IOException e) {
-			System.out.println("IOException: " + e);
+			System.out.println("Connection Closed: " + e);
 		}
 
 	}
@@ -87,10 +88,13 @@ public class Server extends Thread {
 	private void validaEntrada(String linha) {
 		
 		String[] message = linha.split(MessagesConstants.SEPARATOR);
-
-		System.out.println("recebendo: "+linha);
+		if (!message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.KEEP_ALIVE)) {
+			System.out.print(clientConnected.getConnection().getInetAddress()+" Enviou: "+linha);
+		}
+		
 		if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.CRACK)) {
-			System.out.println("CRACK");
+//			System.out.println("CRACK");
+			System.out.println("--- Client pedindo quebra da hash");
 			CrackJob job = new CrackJob(clientConnected, message[MessagesConstants.MESSAGE_CHAR]);
 			jobs.add(job);
 			job.setId(jobs.indexOf(job,jobOnProcess));
@@ -113,6 +117,7 @@ public class Server extends Thread {
 			//- Enviar mensagem de JOB adicionado			
 			//- quais maquinas conectadas (Ja sabemos)s
 			
+			System.out.println("SERVIDOR - Novo job adicionado na posicao "+getJobPosition(job)+" da fila");
 			for (ClientDetails client : clients) {
 				client.sendMessage(getJobPosition(job));
 			}
@@ -121,18 +126,30 @@ public class Server extends Thread {
 			clientConnected.keepAlive();
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.QUEUE)) {
 			//pesquisar na lista de jobs a posição do mesmo
-			System.out.println("QUEUE");
+//			System.out.println("QUEUE");
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.STATS)) {
 			//pesquisar na lista de jobs do CrackJob quanto já foi feito e enviar o percentual
-			System.out.println("STATS");
+//			System.out.println("STATS");
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.JOB_RESULT)) {
 			String probablePassword = message[MessagesConstants.MESSAGE_CHAR];
 			int jobId = Integer.parseInt(message[MessagesConstants.JOB_ID]);
 			if (probablePassword.equals(MessagesConstants.NOT_FOUND)) {
-				System.out.println("JOB_RESULT:NOT_FOUND");
+				if (jobs.get(jobId).stevie.size() > 0) {
+					System.out.println("--- Client não achou a senha entre os indices ["+
+							clientConnected.jobIds.startId + "]-"+jobs.get(jobId).stevie.get(clientConnected.jobIds.startId).predicado +
+							" até ["+clientConnected.jobIds.endId + "]-"+jobs.get(jobId).stevie.get(clientConnected.jobIds.endId).predicado);
+				} else {
+					System.out.println("--- Client não achou a senha entre os indices ["+
+							clientConnected.jobIds.startId + "]"+
+							" até ["+clientConnected.jobIds.endId + "]"+ " --- JOB DESPREZADO, SENHA ENCONTRADA");
+				}
+//				System.out.println("JOB_RESULT:NOT_FOUND");
 				jobs.get(jobId).completeJobsFrom(clientConnected);
 			} else {
-				System.out.println("JOB_RESULT:FOUND");
+				System.out.println("--- Client ACHOU a senha entre os indices ["+
+						clientConnected.jobIds.startId + "]-"+jobs.get(jobId).stevie.get(clientConnected.jobIds.startId).predicado +
+						" até ["+clientConnected.jobIds.endId + "]-"+jobs.get(jobId).stevie.get(clientConnected.jobIds.endId).predicado);
+//				System.out.println("JOB_RESULT:FOUND");
 				if (jobs.get(jobId).tryToEndJob(clientConnected, probablePassword)) {
 					jobOnProcess++;
 					if (jobs.size() > jobOnProcess) {
@@ -146,7 +163,7 @@ public class Server extends Thread {
 			
 		} else  if (message[MessagesConstants.COMMAND_CHAR].equals(MessagesConstants.SEND_JOB)) {
 			//enviar um job da lista de jobs do crackjob.
-			System.out.println("SEND_JOB");
+			System.out.println("--- Client Pedindo um pacote de jobs");
 			if (jobs.size() > jobOnProcess) {
 				if (jobs.get(jobOnProcess).isWaiting()) {
 					jobs.get(jobOnProcess).startJob();
@@ -160,7 +177,10 @@ public class Server extends Thread {
 							MessagesConstants.SEPARATOR+clientConnected.jobIds.endId+
 							MessagesConstants.SEPARATOR+jobToCrack.getHash();
 					clientConnected.sendMessage(msg);
+					System.out.println("SERVIDOR - Enviando pacote "+msg +" para "+clientConnected.getConnection().getInetAddress()+"");
 				}
+			} else {
+				System.out.println("Não a jobs na fila!");
 			}
 		}
 	}
